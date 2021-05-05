@@ -73,12 +73,14 @@ let init = (app) => {
 
     app.stop_edit = function (row_idx, fn) {
         let row = app.vue.rows[row_idx];
-        row._state[fn] = "pending";
-        axios.post(edit_contact_url, {
-            id: row.id, field: fn, value: row[fn]
-        }).then(function (result) {
-            row._state[fn] = "clean";
-        })
+        if (row._state[fn] === 'edit') {
+            row._state[fn] = "pending";
+            axios.post(edit_contact_url, {
+                id: row.id, field: fn, value: row[fn]
+            }).then(function (result) {
+                row._state[fn] = "clean";
+            })
+        }
     };
 
     // We form the dictionary of all methods, so we can assign them
