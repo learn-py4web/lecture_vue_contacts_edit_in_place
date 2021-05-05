@@ -23,7 +23,10 @@ let init = (app) => {
     };
 
     app.decorate = (a) => {
-        a.map((e) => {e._state = {first_name: "clean", last_name: "clean"}; });
+        a.map((e) => {
+            e._state = {first_name: "clean", last_name: "clean"};
+            e._server_vals = {first_name: e.first_name, last_name: e.last_name};
+        });
         return a;
     };
 
@@ -38,6 +41,11 @@ let init = (app) => {
                 id: response.data.id,
                 first_name: app.vue.add_first_name,
                 last_name: app.vue.add_last_name,
+                _state: {first_name: "clean", last_name: "clean"},
+                _server_vals: {
+                    first_name: app.vue.add_first_name,
+                    last_name: app.vue.add_last_name
+                }
             });
             app.enumerate(app.vue.rows);
             app.reset_form();
@@ -74,12 +82,17 @@ let init = (app) => {
     app.stop_edit = function (row_idx, fn) {
         let row = app.vue.rows[row_idx];
         if (row._state[fn] === 'edit') {
-            row._state[fn] = "pending";
-            axios.post(edit_contact_url, {
-                id: row.id, field: fn, value: row[fn]
-            }).then(function (result) {
+            if (row._server_vals[fn] !== row[fn]) {
+                row._state[fn] = "pending";
+                axios.post(edit_contact_url, {
+                    id: row.id, field: fn, value: row[fn]
+                }).then(function (result) {
+                    row._state[fn] = "clean";
+                    row._server_vals[fn] = row[fn];
+                })
+            } else {
                 row._state[fn] = "clean";
-            })
+            }
         }
     };
 
