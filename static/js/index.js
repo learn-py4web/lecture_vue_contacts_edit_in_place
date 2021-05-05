@@ -22,11 +22,17 @@ let init = (app) => {
         return a;
     };
 
+    app.decorate = (a) => {
+        a.map((e) => {e._state = {first_name: "clean", last_name: "clean"}; });
+        return a;
+    };
+
     app.add_contact = function () {
         axios.post(add_contact_url,
             {
                 first_name: app.vue.add_first_name,
                 last_name: app.vue.add_last_name,
+                _state: {first_name: "clean", last_name: "clean"},
             }).then(function (response) {
             app.vue.rows.push({
                 id: response.data.id,
@@ -61,12 +67,28 @@ let init = (app) => {
         app.vue.add_mode = new_status;
     };
 
+    app.start_edit = function (row_idx, fn) {
+        app.vue.rows[row_idx]._state[fn] = "edit";
+    };
+
+    app.stop_edit = function (row_idx, fn) {
+        let row = app.vue.rows[row_idx];
+        row._state[fn] = "pending";
+        axios.post(edit_contact_url, {
+            id: row.id, field: fn, value: row[fn]
+        }).then(function (result) {
+            row._state[fn] = "clean";
+        })
+    };
+
     // We form the dictionary of all methods, so we can assign them
     // to the Vue app in a single blow.
     app.methods = {
         add_contact: app.add_contact,
         set_add_status: app.set_add_status,
         delete_contact: app.delete_contact,
+        start_edit: app.start_edit,
+        stop_edit: app.stop_edit,
     };
 
     // This creates the Vue instance.
@@ -82,7 +104,7 @@ let init = (app) => {
     // For the moment, we 'load' the data from a string.
     app.init = () => {
         axios.get(load_contacts_url).then(function (response) {
-            app.vue.rows = app.enumerate(response.data.rows);
+            app.vue.rows = app.decorate(app.enumerate(response.data.rows));
         });
     };
 
